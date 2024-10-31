@@ -1,6 +1,6 @@
 [build]
   command = "docker build -t my-fastapi-app ."
-  publish = "app"
+  publish = "."
 
 [[redirects]]
   from = "/api/*"
