@@ -1,9 +1,9 @@
 [build]
-  command = "docker build -t my-fastapi-app ."
+  command = "pip install -r requirements.txt && uvicorn app.main:app --host 0.0.0.0 --port 8000"
   publish = "."
 
 [[redirects]]
   from = "/api/*"
-  to = "http://localhost:8000/api/:splat"
+  to = "/.netlify/functions/server/:splat"
   status = 200
   force = true

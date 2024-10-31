@@ -10,7 +10,7 @@ from typing import Optional, List
 from dotenv import load_dotenv
 
 load_dotenv()
-# Setup logging
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -29,9 +29,7 @@ app.add_middleware(
 )
 
 # Initialize Groq client
-client = Groq(
-    api_key=os.getenv("GROQ_API_KEY")
-)
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 class Message(BaseModel):
     role: str
@@ -51,14 +49,12 @@ class ChatResponse(BaseModel):
 
 async def generate_stream(messages, temperature, max_tokens, top_p):
     try:
-        # Add system message if not present
         if messages[0].role != "system":
             messages.insert(0, Message(
                 role="system",
                 content="You are a helpful AI assistant."
             ))
 
-        # Convert messages to the format Groq expects
         formatted_messages = [{"role": m.role, "content": m.content} for m in messages]
 
         completion = client.chat.completions.create(
@@ -97,7 +93,6 @@ async def chat(request: ChatRequest):
         else:
             start_time = time.time()
             
-            # Add system message if not present
             if request.messages[0].role != "system":
                 request.messages.insert(0, Message(
                     role="system",
@@ -147,7 +142,3 @@ async def health_check():
     except Exception as e:
         logger.error(f"Health check failed: {str(e)}")
         raise HTTPException(status_code=503, detail="Service unhealthy")
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
