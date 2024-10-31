@@ -1,0 +1,23 @@
+numpy==1.24.3
+sentencepiece
+protobuf
+--extra-index-url https://download.pytorch.org/whl/cpu
+transformers>=4.31.0
+datasets
+torch
+peft>=0.4.0
+accelerate>=0.21.0
+bitsandbytes>=0.41.1
+pandas
+scikit-learn
+huggingface_hub
+fastapi
+pydantic
+uvicorn
+python-dotenv
+scipy>=1.11.2
+groq
+python-dotenv
+
+
+
