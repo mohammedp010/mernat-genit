@@ -1,6 +1,7 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from fastapi.security import OAuth2PasswordBearer
 from pydantic import BaseModel
 import os
 import logging
@@ -8,13 +9,14 @@ import time
 from groq import Groq
 from typing import Optional, List
 from dotenv import load_dotenv
+from jose import JWTError, jwt
 
 load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="AI Chat API", version="3.0")
+app = FastAPI(title="GENIT Chat API", version="3.0")
 
 # Add CORS middleware
 app.add_middleware(
@@ -47,6 +49,22 @@ class ChatResponse(BaseModel):
     response: str
     processing_time: float
 
+SECRET_KEY = os.getenv("JWT_SECRET")
+ALGORITHM = "HS256"
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+def verify_token(token: str):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload  
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
 async def generate_stream(messages, temperature, max_tokens, top_p):
     try:
         if messages[0].role != "system":
@@ -78,8 +96,10 @@ async def generate_stream(messages, temperature, max_tokens, top_p):
         yield f"data: Error: {str(e)}\n\n"
 
 @app.post("/chat")
-async def chat(request: ChatRequest):
+async def chat(request: ChatRequest, token: str = Depends(oauth2_scheme)):
     try:
+        verify_token(token)  # Verifies the token before processing the request
+        
         if request.stream:
             return StreamingResponse(
                 generate_stream(
@@ -126,8 +146,10 @@ async def chat(request: ChatRequest):
         )
 
 @app.get("/health")
-async def health_check():
+async def health_check(token: str = Depends(oauth2_scheme)):
     try:
+        verify_token(token)  # Verifies the token before responding with health status
+        
         completion = client.chat.completions.create(
             model="llama3-8b-8192",
             messages=[{"role": "user", "content": "Hi"}],
