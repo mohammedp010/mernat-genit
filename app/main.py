@@ -10,6 +10,7 @@ from groq import Groq
 from typing import Optional, List
 from dotenv import load_dotenv
 from jose import JWTError, jwt
+import openai
 
 load_dotenv()
 
@@ -32,6 +33,10 @@ app.add_middleware(
 
 # Initialize Groq client
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+deepseek_client = openai.OpenAI(
+    api_key=os.getenv("DEEPSEEK_API_KEY"),
+    base_url="https://api.deepseek.com"
+)
 
 class Message(BaseModel):
     role: str
@@ -43,7 +48,8 @@ class ChatRequest(BaseModel):
     max_tokens: int = 1024
     top_p: float = 1.0
     stream: bool = True
-    system_prompt: Optional[str] = "You are a helpful AI assistant."
+    system_prompt: Optional[str] = "You are a helpful AI assistant which helps you with your queries."
+    model: str = "llama3-8b-8192"
 
 class ChatResponse(BaseModel):
     response: str
@@ -121,14 +127,26 @@ async def chat(request: ChatRequest, token: str = Depends(oauth2_scheme)):
 
             formatted_messages = [{"role": m.role, "content": m.content} for m in request.messages]
             
-            completion = client.chat.completions.create(
-                model="llama3-8b-8192",
-                messages=formatted_messages,
-                temperature=request.temperature,
-                max_tokens=request.max_tokens,
-                top_p=request.top_p,
-                stream=False,
-            )
+            if request.model.startswith("llama"):
+                client = groq_client
+                completion = client.chat.completions.create(
+                    model=request.model,
+                    messages=formatted_messages,
+                    temperature=request.temperature,
+                    max_tokens=request.max_tokens,
+                    top_p=request.top_p,
+                    stream=False,
+                )
+            else: 
+                client = deepseek_client
+                completion = client.chat.completions.create(
+                    model="deepseek-chat",
+                    messages=formatted_messages,
+                    temperature=request.temperature,
+                    max_tokens=request.max_tokens,
+                    top_p=request.top_p,
+                    stream=False,
+                )
             
             response_text = completion.choices[0].message.content
             processing_time = time.time() - start_time

@@ -6,3 +6,4 @@ python-dotenv
 uvicorn
 python-jose
 passlib
+openai
