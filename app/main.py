@@ -128,6 +128,7 @@ async def chat(request: ChatRequest, token: str = Depends(oauth2_scheme)):
             formatted_messages = [{"role": m.role, "content": m.content} for m in request.messages]
             
             if request.model.startswith("llama"):
+                client = groq_client
                 completion = client.chat.completions.create(
                     model=request.model,
                     messages=formatted_messages,
